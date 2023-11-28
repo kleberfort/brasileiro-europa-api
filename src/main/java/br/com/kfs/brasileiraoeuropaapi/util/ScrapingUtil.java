@@ -19,10 +19,13 @@ public class ScrapingUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ScrapingUtil.class);
 	private static final String  BASE_URL_GOOGLE = "https://www.google.com/search?q=";
 	private static final String  COMPLEMENTO_URL_GOOGLE = "&hl=pt_BR";
+	
+	private static final String CASA = "casa";
+	private static final String VISITANTE = "visitante";
 
 	public static void main(String[] args) {
 		
-		String url = BASE_URL_GOOGLE + "brasil+x+argentina" + COMPLEMENTO_URL_GOOGLE;
+		String url = BASE_URL_GOOGLE + "palmeiras+x+corinthians+08%2F08%2F2020" + COMPLEMENTO_URL_GOOGLE;
 		
 		ScrapingUtil scraping = new ScrapingUtil();
 		scraping.obtemInformacoespartida(url);
@@ -45,7 +48,28 @@ public class ScrapingUtil {
 			
 			if(statusPartida != StatusPartida.PARTIDA_NAO_INICIADA) {
 				String tempoPartida = obtemTempoPartida(document);
-				LOGGER.info("Tempo partida: {}", tempoPartida);  
+				LOGGER.info("Tempo partida: {}", tempoPartida); 
+				
+				Integer placarEquipeCasa = recuperaPlacarEquipeCasa(document);
+				LOGGER.info("Placar Equipe Casa: {}", placarEquipeCasa);
+				
+	            Integer placarEquipeVisitante = recuperaPlacarEquipeVisitante(document);
+	            LOGGER.info("Placar Equipe Visitange: {}", placarEquipeVisitante);
+
+	            String golsEquipeCasa = recuperaGolsEquipeCasa(document);
+	            System.out.println("Gols Equipe Casa: " + golsEquipeCasa);
+
+	            String golsEquipeVisitante = recuperaGolsEquipeVisitante(document);
+	            System.out.println("Gols Equipe Visitante: " +golsEquipeVisitante);
+				
+	            Integer placarEstendidoEquipeCasa = buscaPenalidades(document, CASA);
+	            LOGGER.info("placar estendido equipe casa: {}", placarEstendidoEquipeCasa);
+	            
+	            
+	            Integer placarEstendidoEquipeVisitante = buscaPenalidades(document, VISITANTE);
+	            LOGGER.info("placar estendido equipe visitante: {}", placarEstendidoEquipeVisitante);
+				
+				
 				}
 			
 			String nomeEquipeCasa = recuperaNomeEquipeCasa(document);
@@ -55,17 +79,7 @@ public class ScrapingUtil {
 			LOGGER.info("Nome Equipe Visitante: {}", nomeEquipeVisitante);
 			
 			
-			Integer placarEquipeCasa = recuperaPlacarEquipeCasa(document);
-			LOGGER.info("Placar Equipe Casa: {}", placarEquipeCasa);
-			
-            Integer placarEquipeVisitante = recuperaPlacarEquipeVisitante(document);
-            LOGGER.info("Placar Equipe Visitange: {}", placarEquipeVisitante);
 
-            String golsEquipeCasa = recuperaGolsEquipeCasa(document);
-            System.out.println("Gols Equipe Casa: " + golsEquipeCasa);
-
-            String golsEquipeVisitante = recuperaGolsEquipeVisitante(document);
-            System.out.println("Gols Equipe Visitante: " +golsEquipeVisitante);
 			
 			/*
 			 * //erro Ao recuperar a logo das partidas String urlLogoEquipeCasa =
@@ -161,13 +175,13 @@ public class ScrapingUtil {
 	   public static Integer recuperaPlacarEquipeCasa(Document document){
 
            String placarEquipe = document.selectFirst("div[class=imso_mh__l-tm-sc imso_mh__scr-it imso-light-font]").text();
-           return Integer.valueOf(placarEquipe);
+           return formatarPlacarStringInteger(placarEquipe);
 
   }
 
    public static Integer recuperaPlacarEquipeVisitante(Document document){
        String placarEquipe = document.selectFirst("div[class=imso_mh__r-tm-sc imso_mh__scr-it imso-light-font]").text();
-       return Integer.valueOf(placarEquipe);
+       return formatarPlacarStringInteger(placarEquipe);
    }
 	
    
@@ -193,6 +207,36 @@ public class ScrapingUtil {
 
        return String.join(", ", golsEquipe);
 
+   }
+   
+   
+   public static Integer buscaPenalidades(Document document, String tipoEquipe) {
+	   boolean isPenalidades = document.select("div[class=imso_mh_s__psn-sc]").isEmpty();
+	   
+	   if(!isPenalidades) {
+		   String penalidades = document.select("div[class=imso_mh_s__psn-sc]").text();
+		   String penalidadesCompleta = penalidades.substring(0, 5).replace(" ", "");
+		   String[] divisao = penalidadesCompleta.split("-");
+		   
+		   return tipoEquipe.equals(CASA) ? formatarPlacarStringInteger(divisao[0]) : formatarPlacarStringInteger(divisao[1]);
+		   
+		  // LOGGER.info("Penalidades: {}", penalidadesCompleta);
+	   }
+	   
+	   
+	   return null;
+   }
+   
+   public static Integer formatarPlacarStringInteger(String placar) {
+	   Integer valor;
+	   try {
+		   
+		   valor = Integer.parseInt(placar);
+	   }catch(Exception e){
+		   valor = 0;
+	   }
+	   
+	   return valor;
    }
 	
 
